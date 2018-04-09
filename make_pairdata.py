@@ -1,4 +1,6 @@
 ## 같은 의미를 가진 데이터를 체크하여 nC2만큼 데이터 augmentation을 수행
+## a=b, b=c 라면 a=c인 데이터셋을 추가로 만드는 작업
+
 import os
 import numpy as np
 from itertools import permutations
@@ -38,3 +40,4 @@ for lt in pos_list:
         total_pos_data.append(sample[0] + '\t' + sample[1])
         total_pos_label.append([1.])
 
+result = train_data + total_pos_data
