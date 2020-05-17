@@ -9,6 +9,12 @@ scikit-learn의 isolation forest를 기반으로 제작.
 
 ## module
 
+#### sklearn folder
+- scikit-learn iForest 코드 따라만들어 보기
+
+#### tree_study.py
+- tree 자료구조 요약 정리
+
 #### showDataset.ipynb
 
 #### generateDataset.py
