@@ -1,4 +1,6 @@
-## 20.05.17 (다음에 보는 것으로 미룸)
+import numpy as np
+
+## 20.05.17 (다음에 보는 것으로 미룸, check_array)
 #
 # def check_array(array, ensure_2=True):
 #     array_orig = array
@@ -265,3 +267,24 @@
 #         warnings.warn(msg, DataConversionWarning, stacklevel=3)
 #
 #     return array
+
+## 20.05.20 (다음에 보는 것으로 미룸, check_random_state)
+# def check_random_state(seed):
+#     """Turn seed into a np.random.RandomState instance
+#
+#     Parameters
+#     ----------
+#     seed : None | int | instance of RandomState
+#         If seed is None, return the RandomState singleton used by np.random.
+#         If seed is an int, return a new RandomState instance seeded with seed.
+#         If seed is already a RandomState instance, return it.
+#         Otherwise raise ValueError.
+#     """
+#     if seed is None or seed is np.random:
+#         return np.random.mtrand._rand
+#     if isinstance(seed, numbers.Integral):
+#         return np.random.RandomState(seed)
+#     if isinstance(seed, np.random.RandomState):
+#         return seed
+#     raise ValueError('%r cannot be used to seed a numpy.random.RandomState'
+#                      ' instance' % seed)

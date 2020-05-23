@@ -19,7 +19,7 @@ from module import * 할 때는 무시하는 변수, 함수들이다(다만 직�
 import numpy as np
 
 # from ..utils import check_array
-from sklearn.utils import check_array
+from sklearn.utils import check_array, check_random_state
 from ..tree import ExtraTreeRegressor
 
 class IsolationForest:
@@ -31,15 +31,19 @@ class IsolationForest:
     '''
 
     def __init__(self,
-                 n_estimators=100):
+                 n_estimators=100,
+                 random_state=None):
         super().__init__(
-
-            n_estimators=n_estimators)
+            n_estimators=n_estimators,
+            random_state=random_state)
 
     def _parallel_args(self): # private method
         return
 
     def fit(self, X, y=None, sample_weight=None):
+        X = check_array(X, accept_sparse=['csc'])
+        rnd = check_random_state(self.random_state)
+
         return
 
     def predict(self, X):
