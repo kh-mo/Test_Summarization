@@ -1,7 +1,7 @@
 # 돌려보는 코드
 #
 # import numpy as np
-# from sklearn.ensemble import IsolationForest
+# from my_sklearn.ensemble import IsolationForest
 # clf = IsolationForest(n_estimators=100)
 # clf.fit(np.random.randn(10, 30))
 # clf.estimators_
@@ -16,35 +16,98 @@ PEP8 에서 _로 네이밍한 것은 private를 의미한다
 즉, 해당 모듈에서만 쓰는 것을 의미한다
 from module import * 할 때는 무시하는 변수, 함수들이다(다만 직접 호출하면 사용가능하다)
 '''
+import numbers
 import numpy as np
+from warnings import warn
 
 # from ..utils import check_array
+# from ..tree import ExtraTreeRegressor
+
 from sklearn.utils import check_array, check_random_state
-from ..tree import ExtraTreeRegressor
+
 
 class IsolationForest:
-
     '''
     알고리즘 설명
 
+    n_estimators : 트리 숫자
+    max_samples : 샘플링할 데이터 수로 max_samples 파라미터가 가진 값에 따라 다른 결과가 리턴됨
+        1) "auto" : 256 이하 샘플링 숫자가 자동 리턴
+        2) int : 해당 값으로 숫자 리턴, 데이터 최대 샘플 수를 넘을수는 없다
+        3) float : 비율을 의미, 데이터 최대 샘플 수의 일정 비율만큼 리턴
+    contamination : score의 threshold값을 0으로 맞추기 위한 인자
+    random_state : fit 시, 임의의 y 값 생성
+
     fit 함수를 실행시켰을 때 self.estimators_, self.estimators_features_, self._max_features 값을 얻을 수 있다
     '''
-
     def __init__(self,
                  n_estimators=100,
+                 max_samples="auto",
+                 contamination="auto",
                  random_state=None):
         super().__init__(
             n_estimators=n_estimators,
+            max_samples=max_samples,
             random_state=random_state)
+
+        self.contamination = contamination
 
     def _parallel_args(self): # private method
         return
 
     def fit(self, X, y=None, sample_weight=None):
-        X = check_array(X, accept_sparse=['csc'])
-        rnd = check_random_state(self.random_state)
+        '''
+        y : 사용하지 않지만 sklearn convention 유지를 위해 작성
+        '''
+        X = check_array(X)
+        # X = check_array(X, accept_sparse=['csc'])
 
-        return
+        rnd = check_random_state(self.random_state)
+        y = rnd.uniform(size=X.shape[0])
+
+        # max_sample은 1보다 크고 n_samples보다 작은 [1, n_samples] 범위에 있어야 한다
+        n_samples = X.shape[0]
+
+        # max_samples를 auto나, string으로 지정하면 최대 256
+        if isinstance(self.max_samples, str):
+            if self.max_samples == "auto":
+                max_samples = min(256, n_samples)
+            else:
+                raise ValueError('max_samples (%s) is not supported.'
+                                 'Valid choices are: "auto", int or'
+                                 'float' % self.max_samples)
+
+        # max_samples를 int로 지정하면 해당 값으로 지정, 단 그 값은 데이터 총 샘플 수를 넘을 수 없다
+        elif isinstance(self.max_samples, numbers.Integral):
+            if self.max_samples > n_samples:
+                warn("max_samples (%s) is greater than the "
+                     "total number of samples (%s). max_samples "
+                     "will be set to n_samples for estimation."
+                     % (self.max_samples, n_samples))
+                max_samples = n_samples
+            else:
+                max_samples = self.max_samples
+
+        # max_samples를 float로 지정하면 비율로 간주함, 데이터 총 샘플 수의 일정 비율만큼 구한다
+        else:
+            if not 0. < self.max_samples <= 1.:
+                raise ValueError("max_samples must be in (0, 1], got %r"
+                                 % self.max_samples)
+            max_samples = int(self.max_samples * X.shape[0])
+
+        self.max_samples_ = max_samples
+        # 평균 트리 높이 : 최소 1, 최대 log2(max_sample)
+        max_depth = int(np.ceil(np.log2(max(max_samples, 2))))
+        super()._fit(X, y, max_samples, max=max_depth, sample_weight=sample_weight)
+
+        if self.contamination == "auto":
+            self.offset_ = -0.5
+            return self
+        elif isinstance(self.contamination, numbers.Integral) or isinstance(self.contamination, float):
+            self.offset_ = np.percentile(self.score_samples(X), 100. * self.contamination)
+            return self
+        else:
+            raise ValueError("해당 값은 처리 불가")
 
     def predict(self, X):
         return
@@ -128,7 +191,7 @@ def _average_path_length(n_samples_leaf):
 
 
 ########################################################################################################################
-# 참고 sklearn iForest
+# 참고 my_sklearn iForest
 #
 # import numbers
 # import numpy as np
@@ -289,17 +352,17 @@ def _average_path_length(n_samples_leaf):
 #
 #     See Also
 #     ----------
-#     sklearn.covariance.EllipticEnvelope : An object for detecting outliers in a
+#     my_sklearn.covariance.EllipticEnvelope : An object for detecting outliers in a
 #         Gaussian distributed dataset.
-#     sklearn.svm.OneClassSVM : Unsupervised Outlier Detection.
+#     my_sklearn.svm.OneClassSVM : Unsupervised Outlier Detection.
 #         Estimate the support of a high-dimensional distribution.
 #         The implementation is based on libsvm.
-#     sklearn.neighbors.LocalOutlierFactor : Unsupervised Outlier Detection
+#     my_sklearn.neighbors.LocalOutlierFactor : Unsupervised Outlier Detection
 #         using Local Outlier Factor (LOF).
 #
 #     Examples
 #     --------
-#     >>> from sklearn.ensemble import IsolationForest
+#     >>> from my_sklearn.ensemble import IsolationForest
 #     >>> X = [[-1.1], [0.3], [0.5], [100]]
 #     >>> clf = IsolationForest(random_state=0).fit(X)
 #     >>> clf.predict([[0.1], [0], [90]])
@@ -538,7 +601,7 @@ def _average_path_length(n_samples_leaf):
 #             subsample_features = True
 #
 #         # We get as many rows as possible within our working_memory budget
-#         # (defined by sklearn.get_config()['working_memory']) to store
+#         # (defined by my_sklearn.get_config()['working_memory']) to store
 #         # self._max_features in each row during computation.
 #         #
 #         # Note:
