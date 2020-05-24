@@ -15,6 +15,21 @@
 PEP8 에서 _로 네이밍한 것은 private를 의미한다
 즉, 해당 모듈에서만 쓰는 것을 의미한다
 from module import * 할 때는 무시하는 변수, 함수들이다(다만 직접 호출하면 사용가능하다)
+
+return self
+    : 객체 자체를 반환한다, 이 명령어가 있고 없고에 따라 clf.fit().fit()과 같은 구조를 작성하는 것을 용인하거나 못하게 된다
+        명령어가 존재할 경우 clf.fit().fit() 형태 사용이 가능하다
+        만약 해당 명령어가 없다면 clf.fit()이 NoneType을 반환하므로 연속해서 함수를 쓸 수 없다(AttributeError 발생)
+        이런 chain form이 코드를 작성하는데 가독성에 얼마나 영향을 주는지가 관건이다
+        함수의 기능 자체가 실행되는 것은 chain형태를 쓰는 것과 clf.fit()을 두번 쓰는 것이 동일하다
+
+      ex)
+        print(clf.fit().fit())
+
+        # instaed of
+        clf.fit()
+        clf.fit()
+        print(clf)
 '''
 import numbers
 import numpy as np
