@@ -35,11 +35,11 @@ import numbers
 import numpy as np
 from warnings import warn
 
-# from ..utils import check_array
+# from ..utils import check_array, check_random_state
 # from ..tree import ExtraTreeRegressor
 
 from sklearn.utils import check_array, check_random_state
-
+from sklearn.tree import ExtraTreeRegressor
 
 class IsolationForest:
     '''
@@ -61,6 +61,9 @@ class IsolationForest:
                  contamination="auto",
                  random_state=None):
         super().__init__(
+            base_estimator=ExtraTreeRegressor(max_features=1,
+                                              splitter='random',
+                                              random_state=random_state),
             n_estimators=n_estimators,
             max_samples=max_samples,
             random_state=random_state)
