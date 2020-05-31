@@ -1,5 +1,5 @@
 '''
-https://machinelearningmastery.com/implement-decision-tree-algorithm-scratch-python/
+https://machinelearningmastery.com/implement-decision-tree-algorithm-scratch-python/ 참조
 '''
 
 import os
@@ -10,7 +10,6 @@ def download_data(name):
     '''
     name : download 가능한 데이터 셋 이름
     '''
-
     urls = {"BanknoteAuthentication" :
                 "http://archive.ics.uci.edu/ml/machine-learning-databases/00267/data_banknote_authentication.txt"}
 
@@ -34,8 +33,10 @@ def download_data(name):
 
     return file_path
 
-def gini_index(data, classes):
+def get_gini_score(data, classes):
     '''
+    sigma{pi * (1-pi)} = 1 - (pi)^2
+
     data : 1d list, ex) [0,0,0,1,0,1,0]
     classes : 1d list, ex) [0,1]
     '''
@@ -44,8 +45,30 @@ def gini_index(data, classes):
     for class_val in classes:
         p = data.count(class_val) / data_size
         score += p * p
-    return score
+    gini_score = 1 - score
+    return gini_score
 
+def make_subnode(index, value, data):
+    lnode, rnode = [], []
+    for row in data.index:
+        if data.iloc[row][index] < value:
+            lnode.append(data.iloc[row][4])
+        else:
+            rnode.append(data.iloc[row][4])
+    return lnode, rnode
+
+def get_split(data, classes):
+    ndata = data.shape[0]
+    b_index, b_value, b_score = 999, 999, 999
+    for idx in range(data.shape[1] - 1):
+        for row in data.index:
+            lnode, rnode = make_subnode(idx, data.iloc[row][idx], data)
+            gini_score = get_gini_score(lnode, classes) * (len(rnode) / ndata) \
+                         + get_gini_score(rnode, classes) * (len(rnode) / ndata)
+            if gini_score < b_score:
+                b_index, b_value, b_score = idx, data.iloc[row][idx], gini_score
+                print('X%d < %.3f Gini=%.3f' % ((idx + 1), data.iloc[row][idx], gini_score))
+    return {'index': b_index, 'value': b_value}
 
 if __name__ == "__main__":
     # dataset download
@@ -53,7 +76,10 @@ if __name__ == "__main__":
     file_path = download_data(name)
     dataset = pd.read_csv(file_path, engine='c', header=None)
 
+    # hyperparameter
+    classes = [0, 1]
 
+    get_split(dataset, classes)
     # 부모 노드가 가진 데이터셋의 클리스 집합 s = [0,0,0,0,0,1,1,1,1,1]이 있다.
     # q 변수 p값으로 나눠 리스트 두 개, [0,0,0,0,0], [1,1,1,1,1]를 얻었다
     # 부모노드의 불순도 vs 나눠진 두 자식노드의 불순도 합
@@ -62,24 +88,10 @@ if __name__ == "__main__":
     # calculate gini index
     s = [0,0,0,0,0,1,1,1,1,1]
     cs1, cs2 = [0,0,0,0,0], [1,1,1,1,1]
-    classes = [0,1]
 
     gini_index(s, classes)
     gini_index(cs1, classes)
     gini_index(cs2, classes)
     gini_index([0,0,0,1,0,1], classes)
 
-
-def split_decision(data, q, p):
-    parents_score = gini_index(s, classes)
-    child_score = gini_index(cs1, classes) * (len(cs1) / len(s))\
-                  + gini_index(cs2, classes) * (len(cs2) / len(s))
-    if parents_score > child_score:
-        print("분기 안함")
-    else:
-        print("분기함")
-
-
-
-
-
+data = dataset
