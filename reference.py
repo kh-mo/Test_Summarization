@@ -105,3 +105,10 @@ if __name__ == "__main__":
     gini_index([0,0,0,1,0,1], classes)
 
 data = dataset
+
+def to_terminal(data):
+    '''
+    노드의 클래스가 어떤것인지 결정하는 function
+    '''
+    outcomes = [data[row][4] for row in range(data.shape[0])]
+    return max(set(outcomes), key=outcomes.count)
