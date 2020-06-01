@@ -42,6 +42,9 @@ def get_gini_score(data, classes):
     '''
     score = 0.0
     data_size = len(data)
+    # data_size가 0 = node가 비어있음 = 데이터 없음 = 매우 순수한 상태 = 0 반환
+    if data_size == 0:
+        return 0
     for class_val in classes:
         p = data.count(class_val) / data_size
         score += p * p
@@ -49,6 +52,13 @@ def get_gini_score(data, classes):
     return gini_score
 
 def make_subnode(index, value, data):
+    '''
+    특정 변수가 기준값보다 작은 데이터는 왼쪽 노드, 크거나 같은 데이터는 오른쪽 노드에 할당
+
+    index : split 기준이 될 column index
+    value : split 기준 값
+    data : 데이터 셋(현재는 pandas)
+    '''
     lnode, rnode = [], []
     for row in data.index:
         if data.iloc[row][index] < value:
