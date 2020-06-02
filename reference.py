@@ -69,16 +69,74 @@ def make_subnode(index, value, data):
 
 def get_split(data, classes):
     ndata = data.shape[0]
-    b_index, b_value, b_score = 999, 999, 999
+    b_index, b_value, b_score, b_lnode, b_rnode = 999, 999, 999, None, None
     for idx in range(data.shape[1] - 1):
         for row in data.index:
-            lnode, rnode = make_subnode(idx, data.iloc[row][idx], data)
+            threshold_value = data.iloc[row][idx]
+            lnode, rnode = make_subnode(idx, threshold_value, data)
             gini_score = get_gini_score(lnode, classes) * (len(rnode) / ndata) \
                          + get_gini_score(rnode, classes) * (len(rnode) / ndata)
             if gini_score < b_score:
-                b_index, b_value, b_score = idx, data.iloc[row][idx], gini_score
-                print('X%d < %.3f Gini=%.3f' % ((idx + 1), data.iloc[row][idx], gini_score))
-    return {'index': b_index, 'value': b_value}
+                b_index, b_value, b_score, b_lnode, b_rnode = idx, threshold_value, gini_score, lnode, rnode
+                print('X%d < %.3f Gini=%.3f' % ((idx + 1), threshold_value, gini_score))
+    return {'index': b_index, 'value': b_value, 'lnode': b_lnode, 'rnode': b_rnode}
+
+
+def to_terminal(data):
+    '''
+    노드의 클래스가 어떤것인지 결정하는 function
+    '''
+    return max(set(data), key=data.count)
+
+def split(node, max_depth, min_size, depth):
+    '''
+    트리 분할하기
+    '''
+    left, right = node['lnode'], node['rnode']
+    del(node['lnode'])
+    del(node['rnode'])
+
+    if not left or not right:
+        node['left'] = node['right'] = to_terminal(left+right)
+        return
+
+    if depth >= max_depth:
+        node['left'], node['right'] = to_terminal(left), to_terminal(right)
+        return
+
+    if len(left) <= min_size:
+        node['left'] = to_terminal(left)
+    else:
+        node['left'] = get_split(left)
+        split(node['left'], max_depth, min_size, depth+1)
+
+    if len(right) <= min_size:
+        node['right'] = to_terminal(right)
+    else:
+        node['right'] = get_split(right)
+        split(node['right'], max_depth, min_size, depth+1)
+
+def build_tree(data, max_depth, min_size):
+    '''
+    tree 만들기
+    '''
+    root = get_split(data)
+    split(root, max_depth, min_size, 1)
+    return root
+
+
+# Make a prediction with a decision tree
+def predict(node, row):
+    if row[node['index']] < node['value']:
+        if isinstance(node['left'], dict):
+            return predict(node['left'], row)
+        else:
+            return node['left']
+    else:
+        if isinstance(node['right'], dict):
+            return predict(node['right'], row)
+        else:
+            return node['right']
 
 if __name__ == "__main__":
     # dataset download
@@ -86,29 +144,26 @@ if __name__ == "__main__":
     file_path = download_data(name)
     dataset = pd.read_csv(file_path, engine='c', header=None)
 
+    import numpy as np
+    from sklearn.ensemble import IsolationForest
+    from sklearn import metrics
+
+    idx = np.random.permutation(dataset.shape[0])
+    train_x = dataset.loc[idx[:int(dataset.shape[0]*0.7)], :3]
+    test_x = dataset.loc[idx[int(dataset.shape[0] * 0.7):], :3]
+    train_y = dataset.loc[idx[:int(dataset.shape[0]*0.7)], 4]
+    test_y = dataset.loc[idx[int(dataset.shape[0] * 0.7):], 4]
+
+    clf = IsolationForest().fit(train_x)
+    score = -(clf.decision_function(test_x)+clf.offset_)
+    fpr, tpr, thresholds = metrics.roc_curve(test_y, score)
+    metrics.auc(fpr, tpr)
+
     # hyperparameter
     classes = [0, 1]
 
-    get_split(dataset, classes)
+    tree = build_tree(data=dataset, max_depth=1, min_size=1)
     # 부모 노드가 가진 데이터셋의 클리스 집합 s = [0,0,0,0,0,1,1,1,1,1]이 있다.
     # q 변수 p값으로 나눠 리스트 두 개, [0,0,0,0,0], [1,1,1,1,1]를 얻었다
     # 부모노드의 불순도 vs 나눠진 두 자식노드의 불순도 합
     # 작으면 분기한다
-
-    # calculate gini index
-    s = [0,0,0,0,0,1,1,1,1,1]
-    cs1, cs2 = [0,0,0,0,0], [1,1,1,1,1]
-
-    gini_index(s, classes)
-    gini_index(cs1, classes)
-    gini_index(cs2, classes)
-    gini_index([0,0,0,1,0,1], classes)
-
-data = dataset
-
-def to_terminal(data):
-    '''
-    노드의 클래스가 어떤것인지 결정하는 function
-    '''
-    outcomes = [data[row][4] for row in range(data.shape[0])]
-    return max(set(outcomes), key=outcomes.count)
